@@ -9,7 +9,7 @@ import com.twitter.finagle.http._
 import com.twitter.finagle.http.service.RoutingService
 import com.twitter.server.TwitterServer
 
-object Server extends TwitterServer {
+object ImageServer extends TwitterServer {
 
   class imageRetrievalService(fileName: String) extends Service[Request, Response] {
     def apply(request: Request): Future[Response] = {
@@ -45,6 +45,10 @@ object Server extends TwitterServer {
     case (GET, "/images/small") => new imageRetrievalService("choco-small.jpg")
     case (GET, "/images/medium") => new imageRetrievalService("choco-medium.jpg")
     case (GET, "/images/large") => new imageRetrievalService("choco-large.jpg")
+    case (GET, x) => {
+      log.info(x, Time.now)
+      new imageRetrievalService(x)
+    }
   }
 
   def main {
