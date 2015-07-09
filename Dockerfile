@@ -1,8 +1,10 @@
-FROM anaerobic/base-twitter-server:latest
+FROM rwilsonltf/scala-base
 
-COPY . /app
+RUN git clone https://github.com/rwilsonltf/Twitter-Server-Backend.git
 
-WORKDIR /app
+WORKDIR Twitter-Server-Backend
+
+RUN sbt compile
 
 EXPOSE 8888
 

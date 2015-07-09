@@ -1,13 +1,17 @@
 import java.io.{FileInputStream, File}
 import java.net.InetSocketAddress
-import com.twitter.util.{Await, Future, Time}
-import org.jboss.netty.buffer.{ChannelBuffers, ChannelBufferOutputStream, ChannelBuffer}
-import org.jboss.netty.handler.codec.http.HttpMethod._
+import java.time.Instant
+import java.io.File
+
+import com.twitter.util.{Await, Future}
 import com.twitter.finagle.Service
 import com.twitter.finagle.builder.{ServerBuilder, Server}
 import com.twitter.finagle.http._
 import com.twitter.finagle.http.service.RoutingService
 import com.twitter.server.TwitterServer
+
+import org.jboss.netty.buffer.{ChannelBuffers, ChannelBufferOutputStream, ChannelBuffer}
+import org.jboss.netty.handler.codec.http.HttpMethod._
 
 object ImageServer extends TwitterServer {
 
@@ -40,15 +44,31 @@ object ImageServer extends TwitterServer {
     }
   }
 
+  class defaultPath extends Service[Request, Response] {
+    def apply(request: Request): Future[Response] = {
+      log.info("General request at ", Instant.now())
+
+      val response = Response()
+      response.setContentString("Nothing to show")
+      Future(response)
+    }
+  }
+
+  class fileUpload extends Service[Request, Response] {
+    def apply(request: Request): Future[Response] = {
+      val response = Response()
+      response.setStatusCode(204)
+      Future(response)
+    }
+  }
+
   val routingService = RoutingService.byMethodAndPath {
     case (GET, "/images/xsmall") => new imageRetrievalService("choco-xsmall.jpg")
     case (GET, "/images/small") => new imageRetrievalService("choco-small.jpg")
     case (GET, "/images/medium") => new imageRetrievalService("choco-medium.jpg")
     case (GET, "/images/large") => new imageRetrievalService("choco-large.jpg")
-    case (GET, x) => {
-      log.info(x, Time.now)
-      new imageRetrievalService(x)
-    }
+    case (GET, _) => new defaultPath
+    case (POST, _) => new fileUpload
   }
 
   def main {
