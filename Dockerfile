@@ -1,8 +1,8 @@
 FROM rwilsonltf/scala-base
 
-RUN git clone https://github.com/rwilsonltf/Twitter-Server-Backend.git
+COPY app /app
 
-WORKDIR Twitter-Server-Backend
+WORKDIR /app
 
 RUN sbt compile
 
