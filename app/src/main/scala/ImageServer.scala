@@ -1,9 +1,8 @@
 import java.io.FileInputStream
 import java.net.InetSocketAddress
-import java.time.Instant
 import java.io.File
 
-import com.twitter.util.{Await, Future}
+import com.twitter.util.{Await, Future, Time}
 import com.twitter.finagle.Service
 import com.twitter.finagle.builder.{ServerBuilder, Server}
 import com.twitter.finagle.http._
@@ -47,7 +46,7 @@ object ImageServer extends TwitterServer {
 
   class defaultPath extends Service[Request, Response] {
     def apply(request: Request): Future[Response] = {
-//      log.info("General request at ", Instant.now())
+//      log.info("General request at ", Time.now)
 
       val response = Response()
       response.setContentString("Nothing to show")
