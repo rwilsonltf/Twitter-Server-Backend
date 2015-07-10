@@ -40,16 +40,18 @@ object ImageServer extends TwitterServer {
       response.setContent(buffOutStream.buffer())
       response.headers().add("Content-Type", "application/image")
       response.headers().add("Content-Length", img.length())
+      response.headers().add("X-WARNING", request.headers().get("X-WARNING"))
       Future.value(response)
     }
   }
 
   class defaultPath extends Service[Request, Response] {
     def apply(request: Request): Future[Response] = {
-      log.info("General request at ", Instant.now())
+//      log.info("General request at ", Instant.now())
 
       val response = Response()
       response.setContentString("Nothing to show")
+      response.headers().add("X-WARNING", request.headers().get("X-WARNING"))
       Future(response)
     }
   }
@@ -58,6 +60,7 @@ object ImageServer extends TwitterServer {
     def apply(request: Request): Future[Response] = {
       val response = Response()
       response.setStatusCode(204)
+      response.headers().add("X-WARNING", request.headers().get("X-WARNING"))
       Future(response)
     }
   }
