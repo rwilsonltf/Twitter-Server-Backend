@@ -36,10 +36,13 @@ object ImageServer extends TwitterServer {
           buffOutStream.write(byteBuf, 0, bytesRead)
       }
 
+      val xWarningHeader = request.headers().get("X-WARNING")
+
       response.setContent(buffOutStream.buffer())
       response.headers().add("Content-Type", "application/image")
       response.headers().add("Content-Length", img.length())
-      response.headers().add("X-WARNING", request.headers().get("X-WARNING"))
+      if (xWarningHeader != null && xWarningHeader.length > 0)
+        response.headers().add("X-WARNING", xWarningHeader)
       Future.value(response)
     }
   }
