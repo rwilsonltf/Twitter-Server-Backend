@@ -14,33 +14,34 @@ import org.jboss.netty.handler.codec.http.HttpMethod._
 
 object ImageServer extends TwitterServer {
 
-  class imageRetrievalService(fileName: String) extends Service[Request, Response] {
+  val imageMap = Map(("xsmall", imageLoader("choco-xsmall.jpg")), ("small", imageLoader("choco-small.jpg")), ("medium", imageLoader("choco-medium.jpg")), ("large", imageLoader("choco-large.jpg")))
+
+  def imageLoader(fileName: String): ChannelBuffer = {
+    val img = new File(fileName)
+    val imgStream = new FileInputStream(img)
+    val byteArray = new Array[Byte](img.length().asInstanceOf[Int])
+
+    imgStream.read(byteArray)
+
+    val dynBuffer: ChannelBuffer = ChannelBuffers.dynamicBuffer()
+    dynBuffer.clear()
+    val buffOutStream = new ChannelBufferOutputStream(dynBuffer)
+
+    buffOutStream.write(byteArray, 0, byteArray.length)
+    buffOutStream.buffer()
+  }
+
+  class imageRetrieval(name: String) extends Service[Request, Response] {
     def apply(request: Request): Future[Response] = {
-//      log.info("Request at " + Time.now + " on " + fileName)
       val response = Response()
-      val img = new File(fileName)
-
-      val imgStream = new FileInputStream(img)
-
-      val dynBuffer: ChannelBuffer = ChannelBuffers.dynamicBuffer()
-      dynBuffer.clear()
-      dynBuffer.ensureWritableBytes(img.length().toInt)
-      val buffOutStream = new ChannelBufferOutputStream(dynBuffer)
-
-      var byteBuf = new Array[Byte](4096)
-      var bytesRead = 0
-
-      while (bytesRead != -1) {
-        bytesRead = imgStream.read(byteBuf)
-        if (bytesRead != -1)
-          buffOutStream.write(byteBuf, 0, bytesRead)
-      }
 
       val xWarningHeader = request.headers().get("X-WARNING")
 
-      response.setContent(buffOutStream.buffer())
+      val byteArray = imageMap.get(name).get
+
+      response.setContent(imageMap.get(name).get)
       response.headers().add("Content-Type", "application/image")
-      response.headers().add("Content-Length", img.length())
+//      response.headers().add("Content-Length", byteArray.length)
       if (xWarningHeader != null && xWarningHeader.length > 0)
         response.headers().add("X-WARNING", xWarningHeader)
       Future.value(response)
@@ -50,10 +51,11 @@ object ImageServer extends TwitterServer {
   class defaultPath extends Service[Request, Response] {
     def apply(request: Request): Future[Response] = {
 //      log.info("General request at ", Time.now)
-
+      val xWarningHeader = request.headers().get("X-WARNING")
       val response = Response()
       response.setContentString("Nothing to show")
-      response.headers().add("X-WARNING", request.headers().get("X-WARNING"))
+      if (xWarningHeader != null && xWarningHeader.length > 0)
+        response.headers().add("X-WARNING", xWarningHeader)
       Future(response)
     }
   }
@@ -62,16 +64,18 @@ object ImageServer extends TwitterServer {
     def apply(request: Request): Future[Response] = {
       val response = Response()
       response.setStatusCode(204)
-      response.headers().add("X-WARNING", request.headers().get("X-WARNING"))
+      val xWarningHeader = request.headers().get("X-WARNING")
+      if (xWarningHeader != null && xWarningHeader.length > 0)
+        response.headers().add("X-WARNING", xWarningHeader)
       Future(response)
     }
   }
 
   val routingService = RoutingService.byMethodAndPath {
-    case (GET, "/images/xsmall") => new imageRetrievalService("choco-xsmall.jpg")
-    case (GET, "/images/small") => new imageRetrievalService("choco-small.jpg")
-    case (GET, "/images/medium") => new imageRetrievalService("choco-medium.jpg")
-    case (GET, "/images/large") => new imageRetrievalService("choco-large.jpg")
+    case (GET, "/images/xsmall") => new imageRetrieval("xsmall")
+    case (GET, "/images/small") => new imageRetrieval("small")
+    case (GET, "/images/medium") => new imageRetrieval("medium")
+    case (GET, "/images/large") => new imageRetrieval("large")
     case (GET, _) => new defaultPath
     case (POST, _) => new fileUpload
   }
