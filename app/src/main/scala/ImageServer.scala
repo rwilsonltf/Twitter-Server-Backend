@@ -16,7 +16,7 @@ object ImageServer extends TwitterServer {
 
   val imageMap = Map(("xsmall", imageLoader("choco-xsmall.jpg")), ("small", imageLoader("choco-small.jpg")), ("medium", imageLoader("choco-medium.jpg")), ("large", imageLoader("choco-large.jpg")))
 
-  def imageLoader(fileName: String): ChannelBuffer = {
+  def imageLoader(fileName: String): (ChannelBuffer, Int) = {
     val img = new File(fileName)
     val imgStream = new FileInputStream(img)
     val byteArray = new Array[Byte](img.length().asInstanceOf[Int])
@@ -28,7 +28,7 @@ object ImageServer extends TwitterServer {
     val buffOutStream = new ChannelBufferOutputStream(dynBuffer)
 
     buffOutStream.write(byteArray, 0, byteArray.length)
-    buffOutStream.buffer()
+    (buffOutStream.buffer(), byteArray.length)
   }
 
   class imageRetrieval(name: String) extends Service[Request, Response] {
@@ -37,11 +37,11 @@ object ImageServer extends TwitterServer {
 
       val xWarningHeader = request.headers().get("X-WARNING")
 
-      val byteArray = imageMap.get(name).get
+      val bbqSauce = imageMap.get(name).get
 
-      response.setContent(imageMap.get(name).get)
+      response.setContent(bbqSauce._1)
       response.headers().add("Content-Type", "application/image")
-//      response.headers().add("Content-Length", byteArray.length)
+      response.headers().add("Content-Length", bbqSauce._2)
       if (xWarningHeader != null && xWarningHeader.length > 0)
         response.headers().add("X-WARNING", xWarningHeader)
       Future.value(response)
